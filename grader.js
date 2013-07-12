@@ -21,6 +21,8 @@ References:
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
 */
 
+var sys = require('util');
+var rest = require('restler');
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
@@ -40,6 +42,10 @@ var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
+var cheerioUrl = function(url){
+   return cheerio.load('url="'+url+'"');
+};
+
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
@@ -55,20 +61,57 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
+var checkUrl = function(url,checksfile){
+    
+    var checks = loadChecks(checksfile).sort();
+    var out = {};
+    
+    rest.postJson(url,checks).on('complete',function(data,response){
+
+    });
+/*    for(var ii in checks) {
+        var present = $(checks[ii]).length > 0;
+        out[checks[ii]] = present;
+    }*/
+    return out;
+};
+
 var clone = function(fn) {
     // Workaround for commander.js issue.
     // http://stackoverflow.com/a/6772648
     return fn.bind({});
 };
 
+
 if(require.main == module) {
     program
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+        .option('-u, --url <html_url>', 'URL')
         .parse(process.argv);
+
+  if(program.url){
+    console.log(program.url);
+
+    var checkJson = checkUrl(program.url,program.checks);
+    var outJson = JSON.stringify(checkJson, null, 4);
+    console.log(outJson);
+/*    var dades = rest.get(program.url).on('complet',function(data,result,status){
+        return '1';
+      });
+    var resultat = rest.get(program.url).on('complet',function(result){return '1'});
+    var estat = rest.get(program.url).on('comple',function(status){return status}); */
+         
+
+/*    console.log('DADES => \n' + dades);
+    sys.puts('RESULTAT => \n' + resultat.message);
+    console.log('ESTAT => \n' + estat);*/
+  }
+  else{
     var checkJson = checkHtmlFile(program.file, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
+  }
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
