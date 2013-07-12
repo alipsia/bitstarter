@@ -42,8 +42,8 @@ var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
-var cheerioUrl = function(url){
-   return cheerio.load('url="'+url+'"');
+var cheerioHtml = function(html){
+   return cheerio.load(html);
 };
 
 var loadChecks = function(checksfile) {
@@ -58,22 +58,28 @@ var checkHtmlFile = function(htmlfile, checksfile) {
         var present = $(checks[ii]).length > 0;
         out[checks[ii]] = present;
     }
+    
     return out;
 };
 
 var checkUrl = function(url,checksfile){
     
-    var checks = loadChecks(checksfile).sort();
-    var out = {};
-    
-    rest.postJson(url,checks).on('complete',function(data,response){
+    rest.get(url).on('complete',function(result,response){
+	$ = cheerioHtml(result);
 
-    });
-/*    for(var ii in checks) {
-        var present = $(checks[ii]).length > 0;
-        out[checks[ii]] = present;
-    }*/
-    return out;
+	var checks = loadChecks(checksfile).sort();
+	var out = {};
+        
+    
+        for(var ii in checks) {
+	    
+            var present = $(checks[ii]).length > 0;
+            out[checks[ii]] = present;
+        }
+       
+	var outJson = JSON.stringify(out,null,4);
+	console.log(outJson);
+	});
 };
 
 var clone = function(fn) {
@@ -91,21 +97,9 @@ if(require.main == module) {
         .parse(process.argv);
 
   if(program.url){
-    console.log(program.url);
-
+    
     var checkJson = checkUrl(program.url,program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
-/*    var dades = rest.get(program.url).on('complet',function(data,result,status){
-        return '1';
-      });
-    var resultat = rest.get(program.url).on('complet',function(result){return '1'});
-    var estat = rest.get(program.url).on('comple',function(status){return status}); */
-         
-
-/*    console.log('DADES => \n' + dades);
-    sys.puts('RESULTAT => \n' + resultat.message);
-    console.log('ESTAT => \n' + estat);*/
+    
   }
   else{
     var checkJson = checkHtmlFile(program.file, program.checks);
